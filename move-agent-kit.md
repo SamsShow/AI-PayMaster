@@ -123,7 +123,7 @@ Move Agent Kit is a comprehensive toolkit for building AI agents that interact w
 ### Authentication Setup
 
 ```javascript
-// Using LocalSigner with a private key
+// Using  with a private key
 import { LocalSigner } from "move-agent-kit";
 import { AptosAccount, Network } from "@aptos-labs/ts-sdk";
 
