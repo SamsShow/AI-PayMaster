@@ -1,24 +1,40 @@
 import {
-  LocalSigner,
-  createAptosTools,
-  AptosBalanceTool,
-  AptosTransactionTool,
-  AptosTransferTokenTool,
-} from "move-agent-kit";
-import { AptosAccount, Network } from "@aptos-labs/ts-sdk";
+  Account,
+  AccountAddressInput,
+  Aptos,
+  AptosConfig,
+  Network as AptosNetwork,
+} from "@aptos-labs/ts-sdk";
 
-// Specific protocol imports if we had them
-// import { ThalaStakeTokenTool, AriesLendTool } from "move-agent-kit";
+// Define our own Network enum for compatibility
+export enum Network {
+  DEVNET = "devnet",
+  TESTNET = "testnet",
+  MAINNET = "mainnet",
+}
 
 export class PayMasterAgent {
-  private signer: LocalSigner;
-  private aptosTools: any;
+  private account: Account;
+  private client: Aptos;
   private baseAddress: string;
 
-  constructor(account: AptosAccount, network = Network.TESTNET) {
-    this.signer = new LocalSigner(account, network);
-    this.aptosTools = createAptosTools(this.signer);
-    this.baseAddress = "0x1"; // Will be replaced with actual deployed module address
+  constructor(account: Account, network: Network = Network.TESTNET) {
+    this.account = account;
+
+    // Map our Network enum to AptosNetwork
+    const aptosNetwork =
+      network === Network.MAINNET
+        ? AptosNetwork.MAINNET
+        : network === Network.TESTNET
+        ? AptosNetwork.TESTNET
+        : AptosNetwork.DEVNET;
+
+    // Initialize Aptos client
+    const config = new AptosConfig({ network: aptosNetwork });
+    this.client = new Aptos(config);
+
+    this.baseAddress =
+      "0x598a188bf6a32b61e7508acc4b2fc672ae7d953aba5ccb46976e6bee4814efbf";
   }
 
   /**
@@ -29,15 +45,29 @@ export class PayMasterAgent {
     coinType: string = "0x1::aptos_coin::AptosCoin"
   ): Promise<string> {
     try {
-      const transaction = {
-        function: `${this.baseAddress}::payment_automation::initialize_payment_schedules`,
-        type_arguments: [coinType],
-        arguments: [],
-      };
+      // 1. Build the transaction
+      const transaction = await this.client.transaction.build.simple({
+        sender: this.account.accountAddress,
+        data: {
+          function: `${this.baseAddress}::payment_automation::initialize_payment_schedules`,
+          typeArguments: [coinType],
+          functionArguments: [],
+        },
+      });
 
-      const txnTool = new AptosTransactionTool(this.signer);
-      const result = await txnTool.execute(transaction);
-      return result.hash;
+      // 2. Sign the transaction
+      const senderAuthenticator = this.client.transaction.sign({
+        signer: this.account,
+        transaction,
+      });
+
+      // 3. Submit the transaction
+      const submittedTransaction = await this.client.transaction.submit.simple({
+        transaction,
+        senderAuthenticator,
+      });
+
+      return submittedTransaction.hash;
     } catch (error: any) {
       throw new Error(
         `Failed to initialize payment schedules: ${error.message}`
@@ -61,20 +91,34 @@ export class PayMasterAgent {
     coinType: string = "0x1::aptos_coin::AptosCoin"
   ): Promise<string> {
     try {
-      const transaction = {
-        function: `${this.baseAddress}::payment_automation::create_scheduled_payment`,
-        type_arguments: [coinType],
-        arguments: [
-          recipient,
-          amount,
-          intervalSeconds.toString(),
-          startTime.toString(),
-        ],
-      };
+      // 1. Build the transaction
+      const transaction = await this.client.transaction.build.simple({
+        sender: this.account.accountAddress,
+        data: {
+          function: `${this.baseAddress}::payment_automation::create_scheduled_payment`,
+          typeArguments: [coinType],
+          functionArguments: [
+            recipient,
+            amount,
+            intervalSeconds.toString(),
+            startTime.toString(),
+          ],
+        },
+      });
 
-      const txnTool = new AptosTransactionTool(this.signer);
-      const result = await txnTool.execute(transaction);
-      return result.hash;
+      // 2. Sign the transaction
+      const senderAuthenticator = this.client.transaction.sign({
+        signer: this.account,
+        transaction,
+      });
+
+      // 3. Submit the transaction
+      const submittedTransaction = await this.client.transaction.submit.simple({
+        transaction,
+        senderAuthenticator,
+      });
+
+      return submittedTransaction.hash;
     } catch (error: any) {
       throw new Error(`Failed to create scheduled payment: ${error.message}`);
     }
@@ -90,15 +134,29 @@ export class PayMasterAgent {
     coinType: string = "0x1::aptos_coin::AptosCoin"
   ): Promise<string> {
     try {
-      const transaction = {
-        function: `${this.baseAddress}::payment_automation::cancel_scheduled_payment`,
-        type_arguments: [coinType],
-        arguments: [paymentId.toString()],
-      };
+      // 1. Build the transaction
+      const transaction = await this.client.transaction.build.simple({
+        sender: this.account.accountAddress,
+        data: {
+          function: `${this.baseAddress}::payment_automation::cancel_scheduled_payment`,
+          typeArguments: [coinType],
+          functionArguments: [paymentId.toString()],
+        },
+      });
 
-      const txnTool = new AptosTransactionTool(this.signer);
-      const result = await txnTool.execute(transaction);
-      return result.hash;
+      // 2. Sign the transaction
+      const senderAuthenticator = this.client.transaction.sign({
+        signer: this.account,
+        transaction,
+      });
+
+      // 3. Submit the transaction
+      const submittedTransaction = await this.client.transaction.submit.simple({
+        transaction,
+        senderAuthenticator,
+      });
+
+      return submittedTransaction.hash;
     } catch (error: any) {
       throw new Error(`Failed to cancel scheduled payment: ${error.message}`);
     }
@@ -116,15 +174,29 @@ export class PayMasterAgent {
     coinType: string = "0x1::aptos_coin::AptosCoin"
   ): Promise<string> {
     try {
-      const transaction = {
-        function: `${this.baseAddress}::payment_automation::execute_payment`,
-        type_arguments: [coinType],
-        arguments: [payer, paymentId.toString()],
-      };
+      // 1. Build the transaction
+      const transaction = await this.client.transaction.build.simple({
+        sender: this.account.accountAddress,
+        data: {
+          function: `${this.baseAddress}::payment_automation::execute_payment`,
+          typeArguments: [coinType],
+          functionArguments: [payer, paymentId.toString()],
+        },
+      });
 
-      const txnTool = new AptosTransactionTool(this.signer);
-      const result = await txnTool.execute(transaction);
-      return result.hash;
+      // 2. Sign the transaction
+      const senderAuthenticator = this.client.transaction.sign({
+        signer: this.account,
+        transaction,
+      });
+
+      // 3. Submit the transaction
+      const submittedTransaction = await this.client.transaction.submit.simple({
+        transaction,
+        senderAuthenticator,
+      });
+
+      return submittedTransaction.hash;
     } catch (error: any) {
       throw new Error(`Failed to execute payment: ${error.message}`);
     }
@@ -138,15 +210,29 @@ export class PayMasterAgent {
     coinType: string = "0x1::aptos_coin::AptosCoin"
   ): Promise<string> {
     try {
-      const transaction = {
-        function: `${this.baseAddress}::yield_optimizer::initialize_yield_strategies`,
-        type_arguments: [coinType],
-        arguments: [],
-      };
+      // 1. Build the transaction
+      const transaction = await this.client.transaction.build.simple({
+        sender: this.account.accountAddress,
+        data: {
+          function: `${this.baseAddress}::yield_optimizer::initialize_yield_strategies`,
+          typeArguments: [coinType],
+          functionArguments: [],
+        },
+      });
 
-      const txnTool = new AptosTransactionTool(this.signer);
-      const result = await txnTool.execute(transaction);
-      return result.hash;
+      // 2. Sign the transaction
+      const senderAuthenticator = this.client.transaction.sign({
+        signer: this.account,
+        transaction,
+      });
+
+      // 3. Submit the transaction
+      const submittedTransaction = await this.client.transaction.submit.simple({
+        transaction,
+        senderAuthenticator,
+      });
+
+      return submittedTransaction.hash;
     } catch (error: any) {
       throw new Error(
         `Failed to initialize yield strategies: ${error.message}`
@@ -168,19 +254,33 @@ export class PayMasterAgent {
     coinType: string = "0x1::aptos_coin::AptosCoin"
   ): Promise<string> {
     try {
-      const transaction = {
-        function: `${this.baseAddress}::yield_optimizer::create_yield_strategy`,
-        type_arguments: [coinType],
-        arguments: [
-          protocolId.toString(),
-          targetPercentage.toString(),
-          minIdleAmount,
-        ],
-      };
+      // 1. Build the transaction
+      const transaction = await this.client.transaction.build.simple({
+        sender: this.account.accountAddress,
+        data: {
+          function: `${this.baseAddress}::yield_optimizer::create_yield_strategy`,
+          typeArguments: [coinType],
+          functionArguments: [
+            protocolId.toString(),
+            targetPercentage.toString(),
+            minIdleAmount,
+          ],
+        },
+      });
 
-      const txnTool = new AptosTransactionTool(this.signer);
-      const result = await txnTool.execute(transaction);
-      return result.hash;
+      // 2. Sign the transaction
+      const senderAuthenticator = this.client.transaction.sign({
+        signer: this.account,
+        transaction,
+      });
+
+      // 3. Submit the transaction
+      const submittedTransaction = await this.client.transaction.submit.simple({
+        transaction,
+        senderAuthenticator,
+      });
+
+      return submittedTransaction.hash;
     } catch (error: any) {
       throw new Error(`Failed to create yield strategy: ${error.message}`);
     }
@@ -198,15 +298,29 @@ export class PayMasterAgent {
     coinType: string = "0x1::aptos_coin::AptosCoin"
   ): Promise<string> {
     try {
-      const transaction = {
-        function: `${this.baseAddress}::yield_optimizer::allocate_idle_funds`,
-        type_arguments: [coinType],
-        arguments: [strategyId.toString(), amount],
-      };
+      // 1. Build the transaction
+      const transaction = await this.client.transaction.build.simple({
+        sender: this.account.accountAddress,
+        data: {
+          function: `${this.baseAddress}::yield_optimizer::allocate_idle_funds`,
+          typeArguments: [coinType],
+          functionArguments: [strategyId.toString(), amount],
+        },
+      });
 
-      const txnTool = new AptosTransactionTool(this.signer);
-      const result = await txnTool.execute(transaction);
-      return result.hash;
+      // 2. Sign the transaction
+      const senderAuthenticator = this.client.transaction.sign({
+        signer: this.account,
+        transaction,
+      });
+
+      // 3. Submit the transaction
+      const submittedTransaction = await this.client.transaction.submit.simple({
+        transaction,
+        senderAuthenticator,
+      });
+
+      return submittedTransaction.hash;
     } catch (error: any) {
       throw new Error(`Failed to allocate idle funds: ${error.message}`);
     }
@@ -217,15 +331,29 @@ export class PayMasterAgent {
    */
   async initializeRiskProfile(): Promise<string> {
     try {
-      const transaction = {
-        function: `${this.baseAddress}::risk_manager::initialize_risk_profile`,
-        type_arguments: [],
-        arguments: [],
-      };
+      // 1. Build the transaction
+      const transaction = await this.client.transaction.build.simple({
+        sender: this.account.accountAddress,
+        data: {
+          function: `${this.baseAddress}::risk_manager::initialize_risk_profile`,
+          typeArguments: [],
+          functionArguments: [],
+        },
+      });
 
-      const txnTool = new AptosTransactionTool(this.signer);
-      const result = await txnTool.execute(transaction);
-      return result.hash;
+      // 2. Sign the transaction
+      const senderAuthenticator = this.client.transaction.sign({
+        signer: this.account,
+        transaction,
+      });
+
+      // 3. Submit the transaction
+      const submittedTransaction = await this.client.transaction.submit.simple({
+        transaction,
+        senderAuthenticator,
+      });
+
+      return submittedTransaction.hash;
     } catch (error: any) {
       throw new Error(`Failed to initialize risk profile: ${error.message}`);
     }
@@ -245,20 +373,34 @@ export class PayMasterAgent {
     criticalThreshold: number
   ): Promise<string> {
     try {
-      const transaction = {
-        function: `${this.baseAddress}::risk_manager::update_risk_threshold`,
-        type_arguments: [],
-        arguments: [
-          riskType.toString(),
-          mediumThreshold.toString(),
-          highThreshold.toString(),
-          criticalThreshold.toString(),
-        ],
-      };
+      // 1. Build the transaction
+      const transaction = await this.client.transaction.build.simple({
+        sender: this.account.accountAddress,
+        data: {
+          function: `${this.baseAddress}::risk_manager::update_risk_threshold`,
+          typeArguments: [],
+          functionArguments: [
+            riskType.toString(),
+            mediumThreshold.toString(),
+            highThreshold.toString(),
+            criticalThreshold.toString(),
+          ],
+        },
+      });
 
-      const txnTool = new AptosTransactionTool(this.signer);
-      const result = await txnTool.execute(transaction);
-      return result.hash;
+      // 2. Sign the transaction
+      const senderAuthenticator = this.client.transaction.sign({
+        signer: this.account,
+        transaction,
+      });
+
+      // 3. Submit the transaction
+      const submittedTransaction = await this.client.transaction.submit.simple({
+        transaction,
+        senderAuthenticator,
+      });
+
+      return submittedTransaction.hash;
     } catch (error: any) {
       throw new Error(`Failed to update risk threshold: ${error.message}`);
     }
@@ -272,15 +414,29 @@ export class PayMasterAgent {
     minLiquidityRequirement: string
   ): Promise<string> {
     try {
-      const transaction = {
-        function: `${this.baseAddress}::risk_manager::update_min_liquidity_requirement`,
-        type_arguments: [],
-        arguments: [minLiquidityRequirement],
-      };
+      // 1. Build the transaction
+      const transaction = await this.client.transaction.build.simple({
+        sender: this.account.accountAddress,
+        data: {
+          function: `${this.baseAddress}::risk_manager::update_min_liquidity_requirement`,
+          typeArguments: [],
+          functionArguments: [minLiquidityRequirement],
+        },
+      });
 
-      const txnTool = new AptosTransactionTool(this.signer);
-      const result = await txnTool.execute(transaction);
-      return result.hash;
+      // 2. Sign the transaction
+      const senderAuthenticator = this.client.transaction.sign({
+        signer: this.account,
+        transaction,
+      });
+
+      // 3. Submit the transaction
+      const submittedTransaction = await this.client.transaction.submit.simple({
+        transaction,
+        senderAuthenticator,
+      });
+
+      return submittedTransaction.hash;
     } catch (error: any) {
       throw new Error(
         `Failed to update minimum liquidity requirement: ${error.message}`
@@ -296,11 +452,18 @@ export class PayMasterAgent {
     coinType: string = "0x1::aptos_coin::AptosCoin"
   ): Promise<string> {
     try {
-      const balanceTool = new AptosBalanceTool(this.signer);
-      const balance = await balanceTool.execute({
-        coinType: coinType,
+      const resources = await this.client.account.getAccountResources({
+        accountAddress: this.account.accountAddress,
       });
-      return balance;
+
+      const resourceType = `0x1::coin::CoinStore<${coinType}>`;
+      const resource = resources.find((r) => r.type === resourceType);
+
+      if (!resource) {
+        return "0"; // Coin not found in account
+      }
+
+      return (resource.data as any).coin.value;
     } catch (error: any) {
       throw new Error(`Failed to get balance: ${error.message}`);
     }
@@ -318,13 +481,29 @@ export class PayMasterAgent {
     coinType: string = "0x1::aptos_coin::AptosCoin"
   ): Promise<string> {
     try {
-      const transferTool = new AptosTransferTokenTool(this.signer);
-      const result = await transferTool.execute({
-        recipient,
-        amount,
-        tokenAddress: coinType,
+      // 1. Build the transaction
+      const transaction = await this.client.transaction.build.simple({
+        sender: this.account.accountAddress,
+        data: {
+          function: "0x1::coin::transfer",
+          typeArguments: [coinType],
+          functionArguments: [recipient, amount],
+        },
       });
-      return result.hash;
+
+      // 2. Sign the transaction
+      const senderAuthenticator = this.client.transaction.sign({
+        signer: this.account,
+        transaction,
+      });
+
+      // 3. Submit the transaction
+      const submittedTransaction = await this.client.transaction.submit.simple({
+        transaction,
+        senderAuthenticator,
+      });
+
+      return submittedTransaction.hash;
     } catch (error: any) {
       throw new Error(`Failed to transfer tokens: ${error.message}`);
     }
