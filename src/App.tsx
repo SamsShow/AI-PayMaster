@@ -1,23 +1,14 @@
 import React from "react";
-import { AptosAccount, Network } from "@aptos-labs/ts-sdk";
-import {
-  CustomMoveAgentProvider,
-  GeminiImageAnalysis,
-} from "./agents/CustomMoveAgent";
+import PayMasterTest from "./tools/paymaster/PayMasterTest";
 
 const App: React.FC = () => {
-  // Initialize your Aptos account
-  const account = new AptosAccount({
-    privateKey: process.env.APTOS_PRIVATE_KEY,
-  });
-
   return (
-    <CustomMoveAgentProvider account={account} network={Network.MAINNET}>
-      <div className="App">
-        <h1>Move AI Agent with Gemini</h1>
-        <GeminiImageAnalysis />
-      </div>
-    </CustomMoveAgentProvider>
+    <div className="App">
+      <h1 className="text-3xl font-bold text-center my-6">
+        PayMaster - Automated Payment System
+      </h1>
+      <PayMasterTest />
+    </div>
   );
 };
 

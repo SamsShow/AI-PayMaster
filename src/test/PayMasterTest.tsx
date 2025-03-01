@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
-import { PayMasterAgent, Network } from "./PayMasterAgent";
+import { PayMasterAgent, Network } from "../tools/paymaster/PayMasterAgent";
 import {
   Account,
   Aptos,
   AptosConfig,
   Ed25519PrivateKey,
 } from "@aptos-labs/ts-sdk";
-import { AIYieldOptimizer, StrategyRecommendation } from "./AIYieldOptimizer";
-import { RiskAssessmentEngine, RiskAssessment } from "./RiskAssessmentEngine";
+import { AIYieldOptimizer, StrategyRecommendation } from "../tools/paymaster/AIYieldOptimizer";
+import { RiskAssessmentEngine, RiskAssessment } from "../tools/paymaster/RiskAssessmentEngine";
 import React from "react";
 
 // Test component for PayMaster system
@@ -45,35 +45,30 @@ export default function PayMasterTestUI() {
   useEffect(() => {
     const initializeAccount = async () => {
       try {
-        // For browser compatibility, we'll create a mock account instead
-        // This avoids Buffer-related issues in the browser
+        // For testing purposes, generate a new account
+        // In production, you would integrate with a wallet
+        const privateKeyBytes = new Uint8Array(32);
+        window.crypto.getRandomValues(privateKeyBytes);
 
-        // Mock account address
-        const mockAccount = {
-          accountAddress:
-            "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
-          publicKey: new Uint8Array(32).fill(1), // Mock public key
-          signingKey: {
-            sign: () => new Uint8Array(64).fill(1), // Mock signing function
-          },
-        };
+        // Create account from random private key
+        const privateKey = new Ed25519PrivateKey(privateKeyBytes);
+        const newAccount = Account.fromPrivateKey({ privateKey });
 
-        // Set the mock account
-        setAccount(mockAccount as unknown as Account);
-
-        console.log("Using mock account for demonstration purposes");
-        console.log("Address:", mockAccount.accountAddress);
+        setAccount(newAccount);
 
         // Create agent instances
-        const payMasterAgent = new PayMasterAgent(
-          mockAccount as unknown as Account
-        );
+        const payMasterAgent = new PayMasterAgent(newAccount);
         const aiOptimizer = new AIYieldOptimizer(riskPreference);
         const riskAssessmentEngine = new RiskAssessmentEngine();
 
         setAgent(payMasterAgent);
         setYieldOptimizer(aiOptimizer);
         setRiskEngine(riskAssessmentEngine);
+
+        console.log(
+          "Account initialized with address:",
+          newAccount.accountAddress
+        );
       } catch (err: any) {
         setError(`Failed to initialize account: ${err.message}`);
         console.error("Account initialization error:", err);
@@ -91,15 +86,9 @@ export default function PayMasterTestUI() {
     setError("");
 
     try {
-      // In demo mode, just simulate a transaction hash
-      // const hash = await agent.initializePaymentSchedules();
-      const hash =
-        "0x" +
-        Array(64)
-          .fill("0123456789abcdef"[Math.floor(Math.random() * 16)])
-          .join("");
+      const hash = await agent.initializePaymentSchedules();
       setTxnHash(hash);
-      console.log("Payment schedules initialized (demo):", hash);
+      console.log("Payment schedules initialized:", hash);
     } catch (err: any) {
       setError(`Failed to initialize payment schedules: ${err.message}`);
       console.error("Initialization error:", err);
@@ -116,15 +105,14 @@ export default function PayMasterTestUI() {
     setError("");
 
     try {
-      // In demo mode, just simulate a transaction hash
-      // const hash = await agent.createScheduledPayment(...);
-      const hash =
-        "0x" +
-        Array(64)
-          .fill("0123456789abcdef"[Math.floor(Math.random() * 16)])
-          .join("");
+      const hash = await agent.createScheduledPayment(
+        recipientAddress,
+        paymentAmount,
+        paymentInterval,
+        0 // Start time (0 means start now)
+      );
       setTxnHash(hash);
-      console.log("Payment scheduled (demo):", hash);
+      console.log("Payment scheduled:", hash);
     } catch (err: any) {
       setError(`Failed to create payment: ${err.message}`);
       console.error("Payment creation error:", err);
@@ -141,15 +129,9 @@ export default function PayMasterTestUI() {
     setError("");
 
     try {
-      // In demo mode, just simulate a transaction hash
-      // const hash = await agent.initializeRiskProfile();
-      const hash =
-        "0x" +
-        Array(64)
-          .fill("0123456789abcdef"[Math.floor(Math.random() * 16)])
-          .join("");
+      const hash = await agent.initializeRiskProfile();
       setTxnHash(hash);
-      console.log("Risk profile initialized (demo):", hash);
+      console.log("Risk profile initialized:", hash);
     } catch (err: any) {
       setError(`Failed to initialize risk profile: ${err.message}`);
       console.error("Risk profile initialization error:", err);
@@ -215,11 +197,7 @@ export default function PayMasterTestUI() {
         {account ? (
           <div>
             <p>
-              <strong>Address:</strong>{" "}
-              {formatAddress(account.accountAddress.toString())}
-            </p>
-            <p className="text-sm text-gray-500 mt-1">
-              This is a mock account for demonstration purposes.
+              <strong>Address:</strong> {formatAddress(account.accountAddress.toString())}
             </p>
           </div>
         ) : (
@@ -461,9 +439,6 @@ export default function PayMasterTestUI() {
             >
               View on Explorer
             </a>
-          </p>
-          <p className="text-sm text-gray-500 mt-2">
-            Note: This is a simulated transaction hash for demonstration.
           </p>
         </div>
       )}
