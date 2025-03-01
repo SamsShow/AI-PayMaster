@@ -1,0 +1,13 @@
+[package]
+name = "PayMaster"
+version = "0.1.0"
+authors = ["AI-PayMaster"]
+
+[addresses]
+paymaster = "0x598a188bf6a32b61e7508acc4b2fc672ae7d953aba5ccb46976e6bee4814efbf"
+std = "0x1"
+aptos_std = "0x1"
+aptos_framework = "0x1"
+
+[dependencies]
+AptosFramework = { git = "https://github.com/aptos-labs/aptos-core.git", rev = "mainnet", subdir = "aptos-move/framework/aptos-framework" } 
