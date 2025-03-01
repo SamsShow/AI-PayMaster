@@ -132,9 +132,9 @@ export class AptosWalletManager {
       const aptMint = "0x1::aptos_coin::AptosCoin";
       
       console.log(`Using token type: ${aptMint}`);
-      
+      const amountInOctas = amount * 100000000;
       // Call the agent's transferTokens method with all three parameters
-      const result = await this.agent.transferTokens(formattedAddress, amount, aptMint);
+      const result = await this.agent.transferTokens(formattedAddress, amountInOctas, aptMint);
       
       return result;
     } catch (error) {
